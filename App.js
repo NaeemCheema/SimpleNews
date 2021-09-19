@@ -12,6 +12,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ScreenA from './src/screenA';
 import ScreenB from './src/screenB';
 
+// create navigation stack to move between screen
 const Stack = createNativeStackNavigator();
 
 function App() {
@@ -24,6 +25,5 @@ function App() {
     </NavigationContainer>
   );
 }
-
 
 export default App;

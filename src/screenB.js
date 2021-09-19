@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { View, Dimensions, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity, Touchable, Button } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import WebView from 'react-native-webview';
 
+// Foating navigation function to handle navigations inside webview
 const FloatingNavigation = ({ onBackPress, onForwardPress, canGoBack, canGoForward }) => {
     return (
         <View style={[styles.floatingContainer, (!canGoBack && !canGoForward) && styles.hideContainer ]}>
@@ -31,6 +32,7 @@ class ScreenB extends React.Component {
     }
 
     handleWebViewNavigationState = (navState) => {
+        // set webview nativation states
         this.setState({
             canGoBack: navState.canGoBack,
             canGoForward: navState.canGoForward
@@ -52,7 +54,7 @@ class ScreenB extends React.Component {
                 <WebView
                     ref={ref => (this.webview = ref)}
                     source={{ uri: url }}
-                    originWhitelist={['https://*', 'git://*']}
+                    originWhitelist={['https://*', 'git://*']} // allow origin's to move navigate inside webview
                     onNavigationStateChange={this.handleWebViewNavigationState}
                 />
                 <FloatingNavigation

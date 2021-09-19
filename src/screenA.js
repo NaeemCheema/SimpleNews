@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { View, FlatList, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
 
+// set offset variable for pagination
 const paginationOffSet = 15;
 class ScreenA extends React.Component {
     constructor(props) {
@@ -8,58 +9,72 @@ class ScreenA extends React.Component {
         this.state = {
             storiesID: [],
             storiesData: [],
+            showLoader: false,
             isLoading: false,
-            pagination: paginationOffSet
+            pagination: paginationOffSet,
+            error: '',
         }
     }
 
     componentDidMount() {
-        console.log("componentDidMount");
+        // call function to get data from API
         this.getStoriesIDs();
     }
 
     getStoriesIDs = async () => {
-        console.log("getStoriesIDs");
         try {
-            this.setState({ isLoading: true });
+            this.setState({ showLoader: true });
+            // get stories ID's
             const response = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json')
             const data = response.status == 200 ? await response.json() : [];
+
+            // set stories ID's
             this.setState({ storiesID: data });
-            this.getStoryDetails(data.slice(0, this.state.pagination));
+            // fetch only first 15 stories detail
+            this.getStoryDetails(data.slice(0, this.state.pagination))
+                .then(() => {
+                    this.setState({ showLoader: false });
+                })
         }
         catch (error) {
-            console.error(error.message);
-            this.setState({ isLoading: false });
-        }
-        finally {
-            this.setState({ isLoading: false });
+            // set error message
+            this.setState({ error: error.message });
         }
     }
 
+    // get stories detail function (made async to use callback in get stories ID's)
     getStoryDetails = async (storiesID) => {
         console.log("getStoryDetails pagination", this.state.pagination);
         try {
+            // check stories ids array have valid length
             if (storiesID.length > 0) {
+                // make empty array to push each story data
                 let storyResults = [];
+                // use forof because of async function
                 for (const storyID of storiesID) {
                     const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${storyID}.json`);
                     const story = res.status == 200 ? await res.json() : null;
                     if (story) storyResults.push(story);
                 }
+                // set valid stories data and pagination into callback
                 this.setState({ storiesData: [...this.state.storiesData, ...storyResults] }, () => {
                     this.setState({ pagination: this.state.pagination + paginationOffSet });
                 });
+            } else {
+                // stories ids array don't valid length so throw error
+                throw new Error('There are no stories');
             }
         }
         catch (error) {
-            console.log(error.message);
+            // catch error and set into error state
+            this.setState({ error: error.message });
         } finally {
             this.setState({ isLoading: false });
         }
     }
 
     loadMoreStories = () => {
-        console.log('loadMoreStories');
+        // call function once scroll reached on threshold value
         this.setState({ isLoading: true });
         const { storiesID, pagination } = this.state;
         if (pagination < storiesID.length) {
@@ -69,11 +84,16 @@ class ScreenA extends React.Component {
         }
     }
 
+    // render item function
     renderItem = ({ item }) => {
         return (
-            <TouchableOpacity style={styles.item} onPress={() => this.props.navigation.navigate('ScreenB', {
-                data: item
-            })}>
+            <TouchableOpacity
+                style={styles.item}
+                // pass the story detail data as an props to ScreenB
+                onPress={() => this.props.navigation.navigate('ScreenB', {
+                    data: item
+                })}
+            >
                 <Text style={styles.title}>{item.title}</Text>
             </TouchableOpacity>
         )
@@ -90,18 +110,32 @@ class ScreenA extends React.Component {
     }
 
     render() {
-        const { storiesData } = this.state;
+        const { storiesData, showLoader, error } = this.state;
         return (
             <View style={styles.container}>
-                <Image source={{ uri: 'https://picsum.photos/id/237/200/300' }} style={styles.image} />
-                <FlatList
-                    data={storiesData}
-                    renderItem={this.renderItem}
-                    keyExtractor={(item, index) => index.toString()}
-                    ListFooterComponent={this.renderFooter}
-                    onEndReached={this.loadMoreStories}
-                    onEndReachedThreshold={0.4}
-                />
+                {(!showLoader && error === '') && (
+                    <React.Fragment>
+                        <Image source={{ uri: 'https://picsum.photos/id/237/200/300' }} style={styles.image} />
+                        <FlatList
+                            data={storiesData}
+                            renderItem={this.renderItem}
+                            keyExtractor={(item, index) => index.toString()}
+                            ListFooterComponent={this.renderFooter}
+                            onEndReached={this.loadMoreStories}
+                            onEndReachedThreshold={0.4}
+                        />
+                    </React.Fragment>
+                )}
+                {(showLoader && error === '') && (
+                    <View style={styles.content}>
+                        <ActivityIndicator size="large" color='#000000' />
+                    </View>
+                )}
+                {error !== '' && (
+                    <View style={styles.content}>
+                        <Text style={styles.error}>{error}</Text>
+                    </View>
+                )}
             </View>
         )
     }
@@ -111,19 +145,24 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    list: {
+    content: {
         flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     image: {
         width: '100%',
         height: 200,
-        resizeMode: 'center'
+        resizeMode: 'center',
     },
     item: {
         marginHorizontal: 10,
-        marginVertical: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc'
+        marginVertical: 5,
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+        borderColor: '#ccc',
+        borderRadius: 5,
+        borderWidth: 1,
     },
     title: {
         textAlign: 'center',
@@ -133,6 +172,12 @@ const styles = StyleSheet.create({
     loader: {
         marginVertical: 10,
         alignItems: 'center'
+    },
+    error: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: '#cc0000',
+        textAlign: 'center'
     }
 })
 
