@@ -1,11 +1,14 @@
 import * as React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
 import WebView from 'react-native-webview';
+
+const SCREEN_HEIGHT = Dimensions.get('screen').height;
+const SCREEN_WIDTH = Dimensions.get('screen').width;
 
 // Foating navigation function to handle navigations inside webview
 const FloatingNavigation = ({ onBackPress, onForwardPress, canGoBack, canGoForward }) => {
     return (
-        <View style={[styles.floatingContainer, (!canGoBack && !canGoForward) && styles.hideContainer ]}>
+        <View style={[styles.floatingContainer, (!canGoBack && !canGoForward) && styles.hideContainer]}>
             {canGoBack && (
                 <TouchableOpacity style={styles.button} onPress={onBackPress}>
                     <Text style={styles.buttonTitle}>Back</Text>
@@ -27,7 +30,8 @@ class ScreenB extends React.Component {
         this.state = {
             url: data.url,
             canGoBack: false,
-            canGoForward: false
+            canGoForward: false,
+            spinner: true,
         }
     }
 
@@ -47,16 +51,26 @@ class ScreenB extends React.Component {
         this.webview.goForward();
     }
 
+    hideSpinner = () => {
+        this.setState({ spinner: false });
+    }
+
     render() {
-        const { url, canGoBack, canGoForward } = this.state;
+        const { url, canGoBack, canGoForward, spinner } = this.state;
         return (
             <View style={styles.container}>
                 <WebView
                     ref={ref => (this.webview = ref)}
                     source={{ uri: url }}
-                    originWhitelist={['https://*', 'git://*']} // allow origin's to move navigate inside webview
+                    originWhitelist={['*']} // allow origin's to move navigate inside webview
                     onNavigationStateChange={this.handleWebViewNavigationState}
+                    onLoad={() => this.hideSpinner()}
                 />
+                {spinner && (
+                    <View style={styles.content}>
+                        <ActivityIndicator size="large" color='#000000' />
+                    </View>
+                )}
                 <FloatingNavigation
                     onBackPress={() => this.handleBackPress()}
                     onForwardPress={() => this.handleForwardPress()}
@@ -80,6 +94,12 @@ const styles = StyleSheet.create({
         width: '100%',
         justifyContent: 'space-between',
         flexDirection: 'row'
+    },
+    content: {
+        flex: 1,
+        position: 'absolute',
+        top: SCREEN_HEIGHT / 2,
+        left: SCREEN_WIDTH / 2
     },
     button: {
         backgroundColor: 'transparent',
