@@ -31,7 +31,6 @@ class ScreenB extends React.Component {
             url: data.url,
             canGoBack: false,
             canGoForward: false,
-            spinner: true,
         }
     }
 
@@ -51,8 +50,18 @@ class ScreenB extends React.Component {
         this.webview.goForward();
     }
 
-    hideSpinner = () => {
-        this.setState({ spinner: false });
+    renderSpinner = () => {
+        return (
+            <View style={styles.content}>
+                <ActivityIndicator size="large" color='#000000' />
+            </View>
+        )
+    }
+
+    renderError = (error) => {
+        <View style={styles.content}>
+            <Text style={styles.error}>{error}</Text>
+        </View>
     }
 
     render() {
@@ -64,13 +73,10 @@ class ScreenB extends React.Component {
                     source={{ uri: url }}
                     originWhitelist={['*']} // allow origin's to move navigate inside webview
                     onNavigationStateChange={this.handleWebViewNavigationState}
-                    onLoad={() => this.hideSpinner()}
+                    startInLoadingState={true}
+                    renderLoading={this.renderSpinner}
+                    renderError={(errorName) => this.renderError(errorName)}
                 />
-                {spinner && (
-                    <View style={styles.content}>
-                        <ActivityIndicator size="large" color='#000000' />
-                    </View>
-                )}
                 <FloatingNavigation
                     onBackPress={() => this.handleBackPress()}
                     onForwardPress={() => this.handleForwardPress()}
@@ -96,7 +102,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row'
     },
     content: {
-        flex: 1,
         position: 'absolute',
         top: SCREEN_HEIGHT / 2,
         left: SCREEN_WIDTH / 2
@@ -113,6 +118,12 @@ const styles = StyleSheet.create({
     },
     hideContainer: {
         display: 'none'
+    },
+    error: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: '#cc0000',
+        textAlign: 'center'
     }
 })
 
